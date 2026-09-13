@@ -1,0 +1,97 @@
+---
+import { existsSync } from 'node:fs';
+import Layout from '../../layouts/Layout.astro';
+
+// Renders the download link only once public/resume.pdf actually exists,
+// rather than shipping a link that 404s until you add it.
+const pdfPath = new URL('../../../public/resume.pdf', import.meta.url);
+const hasPdf = existsSync(pdfPath);
+---
+
+<Layout title="Resume — Oliver Browning" description="Resume for Oliver Browning, EE at Texas A&#38;M.">
+	<div class="callout no-print">
+		<strong>Placeholder.</strong> This page has sample structure and made-up
+		coursework/experience — replace every line with your real resume
+		content, then drop the PDF at <code>public/resume.pdf</code> to make
+		the download link below appear.
+	</div>
+
+	<h1>Oliver Browning</h1>
+	<p class="tagline">Electrical Engineering · Texas A&#38;M University · Expected May 2029</p>
+
+	{
+		hasPdf ? (
+			<p><a class="link" href="/resume.pdf">Download PDF</a></p>
+		) : (
+			<p class="muted no-print">
+				(PDF download link will appear here once <code>public/resume.pdf</code> exists.)
+			</p>
+		)
+	}
+
+	<section>
+		<h2>Education</h2>
+		<p>
+			B.S. Electrical Engineering, Texas A&#38;M University — expected
+			graduation May 2029.
+		</p>
+		<p class="muted">
+			Relevant coursework: Circuit Theory, Electromagnetic Fields, Signals
+			and Systems, Digital Logic Design.
+		</p>
+	</section>
+
+	<section>
+		<h2>Skills</h2>
+		<ul>
+			<li>RF and antenna measurement (VNA, spectrum analyzer)</li>
+			<li>PCB schematic capture and layout (Altium, KiCad)</li>
+			<li>Embedded C, Python, MATLAB</li>
+		</ul>
+	</section>
+
+	<section>
+		<h2>Projects</h2>
+		<p>
+			See the <a class="link" href="/#projects">project write-ups</a> on
+			the home page — each one covers a specific piece of work in more
+			depth than a resume bullet can.
+		</p>
+	</section>
+</Layout>
+
+<style>
+	h1 {
+		font-size: var(--text-2xl);
+		margin-bottom: 0.25rem;
+	}
+
+	.tagline {
+		font-family: var(--font-mono);
+		font-size: var(--text-sm);
+		color: var(--muted);
+		margin-bottom: 1.5rem;
+	}
+
+	section {
+		margin-top: 2rem;
+	}
+
+	h2 {
+		font-size: var(--text-lg);
+		margin-bottom: 0.5rem;
+	}
+
+	.muted {
+		color: var(--muted);
+	}
+
+	.callout {
+		border: 1px solid var(--border);
+		background: var(--surface);
+		border-radius: 4px;
+		padding: 0.85rem 1rem;
+		font-size: var(--text-sm);
+		margin-bottom: 2rem;
+	}
+</style>

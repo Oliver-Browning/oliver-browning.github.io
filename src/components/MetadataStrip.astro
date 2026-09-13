@@ -1,0 +1,34 @@
+---
+// Renders a list of metadata items as discrete elements with CSS
+// border-dividers between them — not a joined string — so an empty or
+// omitted field can never leave a dangling separator. Pass only the items
+// that should show; falsy/empty entries should be filtered out by the
+// caller before this component ever sees them.
+export interface MetaItem {
+  label: string;
+  pill?: boolean;
+  statusInProgress?: boolean;
+}
+
+interface Props {
+  items: MetaItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<ul class="meta">
+  {
+    items.map((item) => (
+      <li>
+        {item.pill ? (
+          <span class:list={['pill', item.statusInProgress && 'status-in-progress']}>
+            {item.label}
+          </span>
+        ) : (
+          item.label
+        )}
+      </li>
+    ))
+  }
+</ul>

@@ -1,0 +1,119 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import { Image } from 'astro:assets';
+import Layout from '../layouts/Layout.astro';
+import MetadataStrip, { type MetaItem } from '../components/MetadataStrip.astro';
+
+const projects = await getCollection('projects', ({ data }) => !data.draft);
+const notes = await getCollection('notes', ({ data }) => !data.draft);
+
+type Entry = CollectionEntry<'projects'> | CollectionEntry<'notes'>;
+const posts: Entry[] = [...projects, ...notes].sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+);
+
+function metaFor(post: Entry): MetaItem[] {
+  const items: MetaItem[] = [
+    {
+      label: post.data.date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        timeZone: 'UTC',
+      }),
+    },
+  ];
+  if (post.data.status === 'in-progress') {
+    items.push({ label: 'in-progress', pill: true, statusInProgress: true });
+  } else {
+    items.push({ label: post.data.status });
+  }
+  for (const domain of post.data.domains) {
+    items.push({ label: domain, pill: true });
+  }
+  return items;
+}
+---
+
+<Layout
+  title="Oliver Browning"
+  description="Electrical engineering project write-ups — RF, antennas, and PCB design."
+>
+	<p class="intro">
+		Sophomore electrical engineering student at Texas A&#38;M, focused on
+		RF and PCB design. These are project write-ups from coursework and
+		student-org work.
+	</p>
+
+	<section id="projects" class="index-grid">
+		{
+			posts.map((post) => (
+				<article class:list={['entry', !post.data.hero && 'no-thumb']}>
+					{post.data.hero && (
+						<a href={`/${post.collection}/${post.id}/`} class="entry-thumb" tabindex="-1">
+							<Image
+								src={post.data.hero}
+								alt={post.data.heroAlt ?? ''}
+								width={480}
+								height={360}
+								loading="lazy"
+							/>
+						</a>
+					)}
+					<h3>
+						<a href={`/${post.collection}/${post.id}/`}>{post.data.title}</a>
+					</h3>
+					<MetadataStrip items={metaFor(post)} />
+				</article>
+			))
+		}
+	</section>
+</Layout>
+
+<style>
+	.intro {
+		max-width: 58ch;
+		color: var(--muted);
+		margin-bottom: 2.5rem;
+	}
+
+	.index-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+		gap: 2rem 1.5rem;
+	}
+
+	.entry-thumb {
+		display: block;
+		aspect-ratio: 4 / 3;
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		overflow: hidden;
+		margin-bottom: 0.65rem;
+	}
+
+	.entry-thumb :global(img) {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.entry.no-thumb {
+		border-top: 1px solid var(--border);
+		padding-top: 1rem;
+	}
+
+	.entry h3 {
+		font-size: var(--text-lg);
+		margin: 0 0 0.5rem;
+	}
+
+	.entry h3 a {
+		text-decoration: underline;
+		text-decoration-color: var(--border);
+		text-underline-offset: 3px;
+	}
+
+	.entry h3 a:hover {
+		text-decoration-color: var(--accent);
+	}
+</style>

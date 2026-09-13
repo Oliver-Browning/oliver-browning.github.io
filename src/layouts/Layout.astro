@@ -1,0 +1,59 @@
+---
+import '@fontsource/source-serif-4/400.css';
+import '@fontsource/source-serif-4/600.css';
+import '@fontsource/source-serif-4/700.css';
+import '@fontsource/source-serif-4/400-italic.css';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
+import '@fontsource/ibm-plex-mono/600.css';
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+const currentPath = new URL(Astro.request.url).pathname;
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		{description && <meta name="description" content={description} />}
+		<title>{title}</title>
+		<script is:inline>
+			// Runs before first paint. Only sets an attribute when the visitor
+			// has an explicit stored choice that could differ from their OS
+			// preference — the no-choice case is handled entirely by the
+			// `prefers-color-scheme` media query in global.css, no JS needed.
+			try {
+				var stored = localStorage.getItem('theme');
+				if (stored === 'dark' || stored === 'light') {
+					document.documentElement.setAttribute('data-theme', stored);
+				}
+			} catch (e) {}
+		</script>
+	</head>
+	<body>
+		<div class="page">
+			<Header currentPath={currentPath} />
+			<main>
+				<slot />
+			</main>
+			<Footer />
+		</div>
+	</body>
+</html>
+
+<style is:global>
+	.page {
+		max-width: var(--content-width);
+		margin-inline: auto;
+		padding-inline: 1.25rem;
+	}
+</style>

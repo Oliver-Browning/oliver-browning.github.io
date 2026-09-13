@@ -1,0 +1,113 @@
+---
+import { getCollection, render } from 'astro:content';
+import { Image } from 'astro:assets';
+import Layout from '../../layouts/Layout.astro';
+import MetadataStrip, { type MetaItem } from '../../components/MetadataStrip.astro';
+
+export async function getStaticPaths() {
+	const projects = await getCollection('projects', ({ data }) => !data.draft);
+	const sorted = [...projects].sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+	return sorted.map((project, index) => ({
+		params: { id: project.id },
+		props: {
+			project,
+			prev: sorted[index + 1] ?? null,
+			next: sorted[index - 1] ?? null,
+		},
+	}));
+}
+
+const { project, prev, next } = Astro.props;
+const { Content } = await render(project);
+
+const meta: MetaItem[] = [
+	{
+		label: project.data.date.toLocaleDateString('en-US', {
+			year: 'numeric',
+			month: 'long',
+			day: 'numeric',
+			timeZone: 'UTC',
+		}),
+	},
+	project.data.status === 'in-progress'
+		? { label: 'in-progress', pill: true, statusInProgress: true }
+		: { label: project.data.status },
+	...project.data.domains.map((domain) => ({ label: domain, pill: true })),
+	...project.data.tech.map((tech) => ({ label: tech, pill: true })),
+];
+---
+
+<Layout title={`${project.data.title} — Oliver Browning`} description={project.data.summary}>
+	{
+		project.data.hero && (
+			<div class="hero">
+				<Image
+					src={project.data.hero}
+					alt={project.data.heroAlt ?? ''}
+					width={960}
+					height={540}
+				/>
+			</div>
+		)
+	}
+
+	<h1>{project.data.title}</h1>
+	<MetadataStrip items={meta} />
+
+	<div class="prose">
+		<Content />
+	</div>
+
+	{
+		(prev || next) && (
+			<nav class="prev-next" aria-label="More write-ups">
+				{prev ? (
+					<a class="link" href={`/projects/${prev.id}/`}>
+						&larr; {prev.data.title}
+					</a>
+				) : (
+					<span />
+				)}
+				{next && (
+					<a class="link" href={`/projects/${next.id}/`}>
+						{next.data.title} &rarr;
+					</a>
+				)}
+			</nav>
+		)
+	}
+</Layout>
+
+<style>
+	.hero {
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		overflow: hidden;
+		margin-bottom: 1.5rem;
+	}
+
+	.hero :global(img) {
+		width: 100%;
+		height: auto;
+		display: block;
+	}
+
+	h1 {
+		font-size: var(--text-2xl);
+		margin: 0 0 0.75rem;
+	}
+
+	.prose {
+		margin-top: 2rem;
+	}
+
+	.prev-next {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-top: 3rem;
+		padding-top: 1.5rem;
+		border-top: 1px solid var(--border);
+		font-size: var(--text-sm);
+	}
+</style>

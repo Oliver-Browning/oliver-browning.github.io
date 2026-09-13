@@ -1,0 +1,88 @@
+---
+import ThemeToggle from './ThemeToggle.astro';
+
+interface Props {
+  currentPath: string;
+}
+
+const { currentPath } = Astro.props;
+
+function isActive(path: string) {
+  return currentPath === path || (path !== '/' && currentPath.startsWith(path));
+}
+---
+
+<header class="site-header">
+  <a href="/" class="wordmark">Oliver Browning</a>
+
+  <nav aria-label="Primary">
+    <a href="/" class:list={{ active: currentPath === '/' }}>Home</a>
+    <a href="/#projects" class:list={{ active: currentPath.startsWith('/projects') }}>Projects</a>
+    <a href="/resume" class:list={{ active: isActive('/resume') }}>Resume</a>
+  </nav>
+
+  <div class="tools">
+    <span
+      class="search-placeholder"
+      title="Search is coming in a later phase"
+      aria-hidden="true"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m21 21-4.3-4.3" />
+      </svg>
+    </span>
+    <ThemeToggle />
+  </div>
+</header>
+
+<style>
+  .site-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    padding-block: 1rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+  }
+
+  .wordmark {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: var(--text-sm);
+    text-decoration: none;
+    margin-right: auto;
+  }
+
+  nav {
+    display: flex;
+    gap: 1.1rem;
+  }
+
+  nav a {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    text-decoration: none;
+    color: var(--text);
+  }
+
+  nav a.active {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .tools {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .search-placeholder {
+    display: inline-flex;
+    color: var(--muted);
+    opacity: 0.6;
+    cursor: default;
+  }
+</style>

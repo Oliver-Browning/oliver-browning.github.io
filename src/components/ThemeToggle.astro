@@ -1,0 +1,83 @@
+---
+// Click-only theme toggle. The attribute this writes (`data-theme` on
+// <html>) is read by src/styles/global.css; first-paint value (respecting
+// a stored explicit choice) is set by the blocking inline script in
+// src/layouts/Layout.astro, not here — this component only handles the
+// click going forward.
+---
+
+<button
+  id="theme-toggle"
+  type="button"
+  aria-label="Toggle dark mode"
+  title="Toggle dark mode"
+  class="theme-toggle"
+>
+  <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+  </svg>
+  <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
+  </svg>
+</button>
+
+<style>
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+  }
+
+  .theme-toggle:hover {
+    color: var(--text);
+  }
+
+  .icon-moon {
+    display: none;
+  }
+
+  :root[data-theme="dark"] .icon-sun {
+    display: none;
+  }
+
+  :root[data-theme="dark"] .icon-moon {
+    display: block;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .icon-sun {
+      display: none;
+    }
+
+    :root:not([data-theme="light"]) .icon-moon {
+      display: block;
+    }
+  }
+</style>
+
+<script>
+  const button = document.getElementById('theme-toggle');
+
+  function currentTheme(): 'light' | 'dark' {
+    const stored = localStorage.getItem('theme');
+    if (stored === 'dark' || stored === 'light') return stored;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  button?.addEventListener('click', () => {
+    const next = currentTheme() === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try {
+      localStorage.setItem('theme', next);
+    } catch {
+      // Private browsing / storage disabled — the toggle still works for
+      // this page view, it just won't persist across visits.
+    }
+  });
+</script>
