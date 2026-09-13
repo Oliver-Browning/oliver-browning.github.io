@@ -7,9 +7,9 @@ been built and the conventions to keep consistent as it grows.
 
 ## Status
 
-Phases 1 (scaffold + content model), 2 (design pass), and 3
-(taxonomy/filtering) are done. Phases 4+ (search, deploy, Obsidian wiring,
-extras) are not started yet.
+Phases 1 (scaffold + content model), 2 (design pass), 3
+(taxonomy/filtering), and 4 (search phase 1) are done. Deploy, Obsidian
+wiring, extras, and search phase 2 (semantic search) are not started yet.
 
 ## Stack
 
@@ -36,9 +36,12 @@ extras) are not started yet.
 - pnpm as package manager (`pnpm-workspace.yaml` holds `onlyBuiltDependencies`
   for `esbuild` — pnpm's newer build-approval gate needs it there, not in
   `package.json`)
+- `pagefind` (search, see below), `tsx` (runs the `.ts` maintenance scripts
+  in `scripts/` outside of Astro/Vite), `gray-matter` (frontmatter parsing
+  for `scripts/check-synonyms.ts`) as devDependencies.
 
-Not yet added: Pagefind, remark-math/rehype-katex, Mermaid. These come in
-the search and extras phases.
+Not yet added: remark-math/rehype-katex, Mermaid, semantic search (search
+phase 2). These come in the extras and search phase 2 work.
 
 ## Content model
 
@@ -194,6 +197,70 @@ params (comma-separated, OR within a facet, AND across facets), synced via
 `history.replaceState` — so a filtered view is a shareable link, and
 clicking filters doesn't spam browser history. No pagination is
 implemented (spec: not until 20+ posts).
+
+## Search
+
+Pagefind indexes the built site, not the dev server — `pnpm run build`
+runs `astro build && pagefind --site dist`, and the index only exists
+under `dist/pagefind/` afterward. **`astro dev` cannot search** (there's
+nothing to query yet); to actually test search, run `pnpm build && pnpm
+preview` and use that server. `/search` detects this and shows "Search
+isn't available in dev mode" instead of silently doing nothing.
+
+**Indexing scope**: `data-pagefind-body` is on the `<article>` wrapper in
+`src/pages/projects/[id].astro` and `notes/[id].astro` only. Once *any*
+element on the site has that attribute, Pagefind indexes *only* elements
+with it, sitewide — so every other page (home, tags, skills, about, résumé)
+is automatically excluded from search results without needing
+`data-pagefind-ignore` there too. `data-pagefind-ignore` is still on the
+header/footer, per the spec's explicit instruction, even though it's
+redundant with the above — cheap insurance if the body-scoping ever
+changes.
+
+**Ranking**: title match > keywords/skills/tech match > body match, done
+via `data-pagefind-weight` (10 on the `<h1>`, 5 on a `.visually-hidden`
+block holding `keywords`/`skills`/`tech`, default ~1 on body prose) rather
+than any custom scoring — Pagefind's own ranking handles the ordering once
+the weights are set. `keywords` are real content only Pagefind sees: they
+live in that same hidden block, weighted, never rendered to a reader.
+`domains`/`skills`/`tech` also get `data-pagefind-filter` so they're
+queryable as Pagefind filters, and `title`/`summary`/`date`/`status` get
+`data-pagefind-meta` so `/search` can render a result without a second
+fetch.
+
+**Synonym expansion** (`src/data/synonyms.ts` + `src/utils/synonymGraph.ts`):
+edges are written one-directional in the data file; `buildSynonymGraph()`
+derives the reverse edge for every entry, and `expandQuery()` walks up to
+`MAX_TRANSITIVE_HOPS` (1) further hops outward, capped so the graph can't
+collapse into one blob as it grows. Both the `/search` page's client script
+and `scripts/check-synonyms.ts` import this same module, so the graph logic
+only exists once.
+
+**Why `/search` runs one Pagefind search per term instead of one combined
+query** — this was a real bug caught while testing, not a design up front:
+Pagefind's `search()` ANDs every word within a single call. Concatenating
+the original query with a dozen expansion terms into one string meant a
+page had to contain *all* of them to match anything, so nothing ever did.
+The fix (`src/pages/search.astro`) runs a separate `search()` call per term
+— the original query at full weight, each expansion term at half weight —
+and merges results by summing scores per result `id`, so a direct match on
+what was actually typed still ranks above a match that only hit a synonym.
+Keep this in mind before ever going back to a single combined query string.
+
+**Also caught while testing**: the search page originally read `?q=` from
+`Astro.url.searchParams` in the component frontmatter. That works in dev
+(there's a server), but this site is fully static — the prerendered
+`search/index.html` is fixed at build time and can't see a runtime query
+string at all. The initial query has to be read client-side instead
+(`new URLSearchParams(location.search)` in the `<script>`), which is what
+it does now. Any future page that wants to react to a query param needs
+the same client-side approach, not an `Astro.url` read in frontmatter.
+
+Run `pnpm run synonyms:check` after adding posts or synonym entries — it
+flags graph terms that appear in no post (dead weight, expected to be a
+long list early on and shrink as content grows) and post `keywords` that
+aren't connected to any synonym entry (a missed opportunity, worth adding).
+It's informational only and always exits 0.
 
 ## Known gotchas
 

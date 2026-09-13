@@ -21,15 +21,15 @@ export async function getStaticPaths() {
 const { note, prev, next } = Astro.props;
 const { Content } = await render(note);
 
+const dateLabel = note.data.date.toLocaleDateString('en-US', {
+	year: 'numeric',
+	month: 'long',
+	day: 'numeric',
+	timeZone: 'UTC',
+});
+
 const meta: MetaItem[] = [
-	{
-		label: note.data.date.toLocaleDateString('en-US', {
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric',
-			timeZone: 'UTC',
-		}),
-	},
+	{ label: dateLabel },
 	note.data.status === 'in-progress'
 		? { label: 'in-progress', pill: true, statusInProgress: true }
 		: { label: note.data.status },
@@ -51,16 +51,41 @@ const meta: MetaItem[] = [
 		)
 	}
 
-	<h1>{note.data.title}</h1>
-	<MetadataStrip items={meta} />
+	<article data-pagefind-body>
+		<h1 data-pagefind-weight="10" data-pagefind-meta="title">{note.data.title}</h1>
+		<MetadataStrip items={meta} />
 
-	<div class="prose">
-		<Content />
-	</div>
+		{/* Present for Pagefind (ranking, filters, result metadata), not for readers. */}
+		<div class="visually-hidden" aria-hidden="true">
+			{note.data.keywords.map((keyword) => (
+				<span data-pagefind-weight="5">{keyword}</span>
+			))}
+			{note.data.skills.map((skill) => (
+				<span data-pagefind-weight="5" data-pagefind-filter="Skill">
+					{skill}
+				</span>
+			))}
+			{note.data.tech.map((tech) => (
+				<span data-pagefind-weight="5" data-pagefind-filter="Tech">
+					{tech}
+				</span>
+			))}
+			{note.data.domains.map((domain) => (
+				<span data-pagefind-filter="Domain">{domain}</span>
+			))}
+			<span data-pagefind-meta="summary">{note.data.summary}</span>
+			<span data-pagefind-meta="date">{dateLabel}</span>
+			<span data-pagefind-meta="status">{note.data.status}</span>
+		</div>
+
+		<div class="prose">
+			<Content />
+		</div>
+	</article>
 
 	{
 		(prev || next) && (
-			<nav class="prev-next" aria-label="More write-ups">
+			<nav class="prev-next" aria-label="More write-ups" data-pagefind-ignore>
 				{prev ? (
 					<a class="link" href={`/notes/${prev.id}/`}>
 						&larr; {prev.data.title}

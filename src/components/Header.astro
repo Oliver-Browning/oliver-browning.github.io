@@ -12,7 +12,7 @@ function isActive(path: string) {
 }
 ---
 
-<header class="site-header">
+<header class="site-header" data-pagefind-ignore>
   <a href="/" class="wordmark">Oliver Browning</a>
 
   <nav aria-label="Primary">
@@ -22,16 +22,18 @@ function isActive(path: string) {
   </nav>
 
   <div class="tools">
-    <span
-      class="search-placeholder"
-      title="Search is coming in a later phase"
-      aria-hidden="true"
+    <a
+      href="/search"
+      class="search-link"
+      class:list={{ active: isActive('/search') }}
+      aria-label="Search"
+      title="Search"
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="11" cy="11" r="7" />
         <path d="m21 21-4.3-4.3" />
       </svg>
-    </span>
+    </a>
     <ThemeToggle />
   </div>
 </header>
@@ -79,10 +81,13 @@ function isActive(path: string) {
     gap: 0.75rem;
   }
 
-  .search-placeholder {
+  .search-link {
     display: inline-flex;
     color: var(--muted);
-    opacity: 0.6;
-    cursor: default;
+  }
+
+  .search-link:hover,
+  .search-link.active {
+    color: var(--accent);
   }
 </style>

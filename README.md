@@ -12,15 +12,18 @@ the content schema, and how to add a post.
 | `pnpm build`     | Build the production site to `./dist/`      |
 | `pnpm preview`   | Preview the production build locally        |
 | `pnpm run check` | Type-check the whole project                |
+| `pnpm run synonyms:check` | Lint the search synonym graph against content |
 
 ## Status
 
-Phases 1 (scaffold + content model) and 2 (design pass) are complete: Astro
-7 in static mode, a Zod-validated content schema for `projects` and `notes`,
-three sample write-ups (marked as samples — replace or delete them), and a
-full light/dark design system (Texas A&#38;M maroon accent, Source Serif 4 +
-IBM Plex Mono, responsive layout, print stylesheet). `/resume` and `/about`
-have placeholder content — replace it with the real thing.
+Phases 1–4 are complete: scaffold + content model, a full light/dark design
+system (Texas A&M maroon accent, Source Serif 4 + IBM Plex Mono), taxonomy
+pages (`/tags`, `/tech`, `/skills`) with client-side home-page filtering,
+and search (Pagefind + a domain synonym layer at `/search`). `/resume` and
+`/about` still have placeholder content — replace it with the real thing.
 
-Taxonomy/filtering, search, deployment, and Obsidian wiring come in later
-phases; this README will grow alongside them.
+Search only works against a production build, not `pnpm dev` — run `pnpm
+build && pnpm preview` to try it locally. See `CLAUDE.md` for why.
+
+Deployment and Obsidian wiring come in later phases; this README will grow
+alongside them.

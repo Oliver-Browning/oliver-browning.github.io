@@ -9,9 +9,10 @@
   "packageManager": "pnpm@12.4.1",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && pagefind --site dist",
     "preview": "astro preview",
     "check": "astro check",
+    "synonyms:check": "tsx scripts/check-synonyms.ts",
     "astro": "astro"
   },
   "dependencies": {
@@ -25,7 +26,10 @@
   "devDependencies": {
     "typescript": "^5.7.0",
     "@astrojs/check": "^0.9.10",
-    "@types/node": "^22.20.2"
+    "@types/node": "^22.20.2",
+    "pagefind": "^1.5.2",
+    "tsx": "^4.23.13",
+    "gray-matter": "^4.0.3"
   },
   "allowScripts": {
     "esbuild": true
