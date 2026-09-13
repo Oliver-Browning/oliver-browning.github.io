@@ -176,6 +176,11 @@ a.link {
   color: var(--text);
   padding: 0.1em 0.55em;
   border-radius: 3px;
+  text-decoration: none;
+}
+
+a.pill:hover {
+  color: var(--accent);
 }
 
 .pill.status-in-progress {

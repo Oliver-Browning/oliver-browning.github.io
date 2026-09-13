@@ -1,6 +1,7 @@
 ---
 import { existsSync } from 'node:fs';
 import Layout from '../../layouts/Layout.astro';
+import MetadataStrip from '../../components/MetadataStrip.astro';
 
 // Renders the download link only once public/resume.pdf actually exists,
 // rather than shipping a link that 404s until you add it.
@@ -8,7 +9,7 @@ const pdfPath = new URL('../../../public/resume.pdf', import.meta.url);
 const hasPdf = existsSync(pdfPath);
 ---
 
-<Layout title="Resume — Oliver Browning" description="Resume for Oliver Browning, EE at Texas A&#38;M.">
+<Layout title="Resume — Oliver Browning" description="Resume for Oliver Browning, EE at Texas A&M.">
 	<div class="callout no-print">
 		<strong>Placeholder.</strong> This page has sample structure and made-up
 		coursework/experience — replace every line with your real resume
@@ -17,13 +18,19 @@ const hasPdf = existsSync(pdfPath);
 	</div>
 
 	<h1>Oliver Browning</h1>
-	<p class="tagline">Electrical Engineering · Texas A&#38;M University · Expected May 2029</p>
+	<MetadataStrip
+		items={[
+			{ label: 'Electrical Engineering' },
+			{ label: 'Texas A&M University' },
+			{ label: 'Expected May 2029' },
+		]}
+	/>
 
 	{
 		hasPdf ? (
-			<p><a class="link" href="/resume.pdf">Download PDF</a></p>
+			<p class="pdf-link"><a class="link" href="/resume.pdf">Download PDF</a></p>
 		) : (
-			<p class="muted no-print">
+			<p class="muted no-print pdf-link">
 				(PDF download link will appear here once <code>public/resume.pdf</code> exists.)
 			</p>
 		)
@@ -32,7 +39,7 @@ const hasPdf = existsSync(pdfPath);
 	<section>
 		<h2>Education</h2>
 		<p>
-			B.S. Electrical Engineering, Texas A&#38;M University — expected
+			B.S. Electrical Engineering, Texas A&M University — expected
 			graduation May 2029.
 		</p>
 		<p class="muted">
@@ -63,15 +70,13 @@ const hasPdf = existsSync(pdfPath);
 <style>
 	h1 {
 		font-size: var(--text-2xl);
-		margin-bottom: 0.25rem;
+		margin-bottom: 0.5rem;
 	}
 
-	.tagline {
-		font-family: var(--font-mono);
-		font-size: var(--text-sm);
-		color: var(--muted);
-		margin-bottom: 1.5rem;
+	.pdf-link {
+		margin-top: 1.25rem;
 	}
+
 
 	section {
 		margin-top: 2rem;

@@ -7,9 +7,9 @@ been built and the conventions to keep consistent as it grows.
 
 ## Status
 
-Phases 1 (scaffold + content model) and 2 (design pass) are done. Phases 3+
-(taxonomy/filtering UI, search, deploy, Obsidian wiring, extras) are not
-started yet.
+Phases 1 (scaffold + content model), 2 (design pass), and 3
+(taxonomy/filtering) are done. Phases 4+ (search, deploy, Obsidian wiring,
+extras) are not started yet.
 
 ## Stack
 
@@ -158,8 +158,57 @@ Not built yet: the `<Theme>` MDX component (named-section: heading + image
 these" in the spec, not tied to a specific numbered phase — planned for
 the extras pass.
 
+## Taxonomy pages and filtering
+
+`src/components/EntryCard.astro` is the one place a post renders as a
+grid entry — used by the home page and every `/tags/[tag]` and
+`/tech/[tool]` archive page, so the thumbnail/no-thumbnail layout and the
+metadata strip can't drift out of sync between them. It stamps
+`data-type`/`data-domains` on its root element, which is what the home
+page's filter script reads.
+
+**Archive pages** (`src/pages/tags/[tag].astro`, `src/pages/tech/[tool].astro`):
+`getStaticPaths` only generates a page for a taxonomy value that at least
+one published post actually uses — filtered against `DOMAINS`/`TECH` from
+`src/data/taxonomy.ts`. A tag with zero posts gets no route at all, so
+every pill (`domains`/`tech` on `MetadataStrip`) can link to its archive
+page unconditionally, knowing the target always exists. `tech` values can
+contain spaces ("CST Studio"), so `src/utils/slug.ts` (`techSlug`) turns
+them into URL segments — it's imported everywhere a `/tech/` link or the
+`[tool]` route itself needs that mapping, so they can't drift apart.
+
+**`/skills`** groups by domain, then by skill within that domain, linking
+each skill to the post(s) whose `skills` array includes it. A post with
+multiple domains shows the same skill under each of its domains — that's
+intentional, not a dedup bug, since a hiring manager scanning by domain
+should see everything relevant to that domain in one place.
+
+**Home page filters** (`src/pages/index.astro`): computed facets (`type`,
+`domain`) are client-side only — `getStaticPaths` can't help here since
+the whole point is filtering without a page reload. A facet only renders
+if it has more than one distinct value among published posts; the site
+owner's spec explicitly says not to show a filter that "filters nothing,"
+so a facet where every post shares the same value stays hidden rather
+than being manually toggled off. State lives in `?type=a,b&domain=c` query
+params (comma-separated, OR within a facet, AND across facets), synced via
+`history.replaceState` — so a filtered view is a shareable link, and
+clicking filters doesn't spam browser history. No pagination is
+implemented (spec: not until 20+ posts).
+
 ## Known gotchas
 
+- **Never write `&amp;`/`&#38;` in a JS string or component prop** — only in
+  raw template text. `<p>Texas A&#38;M</p>` renders correctly (the browser
+  decodes the entity), but `title="... A&#38;M"` on a component, or
+  `{ label: 'Texas A&#38;M' }` in an object literal, does not: that string
+  is a literal JS value, not HTML, so it isn't decoded, and when Astro
+  later interpolates it into markup its own escaping doubles up the `&`
+  into `&amp;#38;`. This actually happened (the resume page's `description`
+  prop and a `MetadataStrip` item both showed literal `&#38;` text on the
+  rendered page). The fix that always works in both positions: just type a
+  real `&` character — Astro's escaping handles turning it into `&amp;` in
+  the final HTML wherever that's needed, so there's never a reason to
+  hand-encode it yourself.
 - **Dates and timezones:** frontmatter `date` is a bare `YYYY-MM-DD`, which
   `z.coerce.date()` parses as UTC midnight. Any `toLocaleDateString` call on
   it must pass `timeZone: 'UTC'`, or dates render one day early in timezones

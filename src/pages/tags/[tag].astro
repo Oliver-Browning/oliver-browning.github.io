@@ -1,0 +1,52 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import EntryCard from '../../components/EntryCard.astro';
+import { DOMAINS } from '../../data/taxonomy';
+
+type Entry = CollectionEntry<'projects'> | CollectionEntry<'notes'>;
+
+export async function getStaticPaths() {
+	const projects = await getCollection('projects', ({ data }) => !data.draft);
+	const notes = await getCollection('notes', ({ data }) => !data.draft);
+	const posts: Entry[] = [...projects, ...notes];
+
+	// Only generate a page for a domain that actually has published content —
+	// an archive page with zero posts is a dead end, not an SEO asset.
+	return DOMAINS.filter((domain) => posts.some((p) => p.data.domains.includes(domain))).map(
+		(domain) => ({
+			params: { tag: domain },
+			props: {
+				posts: posts
+					.filter((p) => p.data.domains.includes(domain))
+					.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()),
+			},
+		}),
+	);
+}
+
+const { tag } = Astro.params;
+const { posts } = Astro.props as { posts: Entry[] };
+---
+
+<Layout title={`${tag} — Oliver Browning`} description={`Write-ups tagged ${tag}.`}>
+	<h1>Tagged: {tag}</h1>
+	<section class="index-grid">
+		{posts.map((post) => <EntryCard post={post} />)}
+	</section>
+</Layout>
+
+<style>
+	h1 {
+		font-size: var(--text-2xl);
+		margin-bottom: 2rem;
+		font-family: var(--font-mono);
+		font-weight: 600;
+	}
+
+	.index-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+		gap: 2rem 1.5rem;
+	}
+</style>

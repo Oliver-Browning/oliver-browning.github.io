@@ -1,0 +1,49 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import EntryCard from '../../components/EntryCard.astro';
+import { TECH } from '../../data/taxonomy';
+import { techSlug } from '../../utils/slug';
+
+type Entry = CollectionEntry<'projects'> | CollectionEntry<'notes'>;
+
+export async function getStaticPaths() {
+	const projects = await getCollection('projects', ({ data }) => !data.draft);
+	const notes = await getCollection('notes', ({ data }) => !data.draft);
+	const posts: Entry[] = [...projects, ...notes];
+
+	return TECH.filter((tech) => posts.some((p) => p.data.tech.includes(tech))).map((tech) => ({
+		params: { tool: techSlug(tech) },
+		props: {
+			tech,
+			posts: posts
+				.filter((p) => p.data.tech.includes(tech))
+				.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()),
+		},
+	}));
+}
+
+const { tech, posts } = Astro.props as { tech: string; posts: Entry[] };
+---
+
+<Layout title={`${tech} — Oliver Browning`} description={`Write-ups using ${tech}.`}>
+	<h1>Tech: {tech}</h1>
+	<section class="index-grid">
+		{posts.map((post) => <EntryCard post={post} />)}
+	</section>
+</Layout>
+
+<style>
+	h1 {
+		font-size: var(--text-2xl);
+		margin-bottom: 2rem;
+		font-family: var(--font-mono);
+		font-weight: 600;
+	}
+
+	.index-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+		gap: 2rem 1.5rem;
+	}
+</style>

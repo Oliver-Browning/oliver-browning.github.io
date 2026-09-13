@@ -3,6 +3,7 @@ import { getCollection, render } from 'astro:content';
 import { Image } from 'astro:assets';
 import Layout from '../../layouts/Layout.astro';
 import MetadataStrip, { type MetaItem } from '../../components/MetadataStrip.astro';
+import { techSlug } from '../../utils/slug';
 
 export async function getStaticPaths() {
 	const notes = await getCollection('notes', ({ data }) => !data.draft);
@@ -32,8 +33,12 @@ const meta: MetaItem[] = [
 	note.data.status === 'in-progress'
 		? { label: 'in-progress', pill: true, statusInProgress: true }
 		: { label: note.data.status },
-	...note.data.domains.map((domain) => ({ label: domain, pill: true })),
-	...note.data.tech.map((tech) => ({ label: tech, pill: true })),
+	...note.data.domains.map((domain) => ({ label: domain, pill: true, href: `/tags/${domain}/` })),
+	...note.data.tech.map((tech) => ({
+		label: tech,
+		pill: true,
+		href: `/tech/${techSlug(tech)}/`,
+	})),
 ];
 ---
 

@@ -1,8 +1,7 @@
 ---
 import { getCollection, type CollectionEntry } from 'astro:content';
-import { Image } from 'astro:assets';
 import Layout from '../layouts/Layout.astro';
-import MetadataStrip, { type MetaItem } from '../components/MetadataStrip.astro';
+import EntryCard from '../components/EntryCard.astro';
 
 const projects = await getCollection('projects', ({ data }) => !data.draft);
 const notes = await getCollection('notes', ({ data }) => !data.draft);
@@ -12,26 +11,22 @@ const posts: Entry[] = [...projects, ...notes].sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
 );
 
-function metaFor(post: Entry): MetaItem[] {
-  const items: MetaItem[] = [
-    {
-      label: post.data.date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        timeZone: 'UTC',
-      }),
-    },
-  ];
-  if (post.data.status === 'in-progress') {
-    items.push({ label: 'in-progress', pill: true, statusInProgress: true });
-  } else {
-    items.push({ label: post.data.status });
-  }
-  for (const domain of post.data.domains) {
-    items.push({ label: domain, pill: true });
-  }
-  return items;
-}
+// Filter facets are computed from what's actually published, and a facet
+// only renders once it has more than one distinct value — filtering by a
+// dimension every post shares "filters nothing" and shouldn't take up
+// space. This also means the controls disappear on their own if content
+// ever shrinks back down to one type/domain, no manual toggling needed.
+const typeOrder = ['project', 'note', 'teardown', 'coursework'] as const;
+const typesPresent = typeOrder.filter((t) => posts.some((p) => p.data.type === t));
+
+const domainOrder = [
+  'rf', 'antennas', 'electronic-warfare', 'signal-processing', 'embedded',
+  'firmware', 'controls', 'power', 'pcb', 'mechanical', 'thermal',
+  'manufacturing', 'test', 'software',
+] as const;
+const domainsPresent = domainOrder.filter((d) => posts.some((p) => p.data.domains.includes(d)));
+
+const hasFilters = typesPresent.length > 1 || domainsPresent.length > 1;
 ---
 
 <Layout
@@ -39,41 +34,96 @@ function metaFor(post: Entry): MetaItem[] {
   description="Electrical engineering project write-ups — RF, antennas, and PCB design."
 >
 	<p class="intro">
-		Sophomore electrical engineering student at Texas A&#38;M, focused on
+		Sophomore electrical engineering student at Texas A&M, focused on
 		RF and PCB design. These are project write-ups from coursework and
 		student-org work.
 	</p>
 
+	{
+		hasFilters && (
+			<div class="filters no-print" id="filters">
+				{typesPresent.length > 1 && (
+					<div class="filter-group" role="group" aria-label="Filter by type">
+						<span class="filter-label">type</span>
+						{typesPresent.map((t) => (
+							<button type="button" data-facet="type" data-value={t} aria-pressed="false">
+								{t}
+							</button>
+						))}
+					</div>
+				)}
+				{domainsPresent.length > 1 && (
+					<div class="filter-group" role="group" aria-label="Filter by domain">
+						<span class="filter-label">domain</span>
+						{domainsPresent.map((d) => (
+							<button type="button" data-facet="domain" data-value={d} aria-pressed="false">
+								{d}
+							</button>
+						))}
+					</div>
+				)}
+			</div>
+		)
+	}
+
 	<section id="projects" class="index-grid">
-		{
-			posts.map((post) => (
-				<article class:list={['entry', !post.data.hero && 'no-thumb']}>
-					{post.data.hero && (
-						<a href={`/${post.collection}/${post.id}/`} class="entry-thumb" tabindex="-1">
-							<Image
-								src={post.data.hero}
-								alt={post.data.heroAlt ?? ''}
-								width={480}
-								height={360}
-								loading="lazy"
-							/>
-						</a>
-					)}
-					<h3>
-						<a href={`/${post.collection}/${post.id}/`}>{post.data.title}</a>
-					</h3>
-					<MetadataStrip items={metaFor(post)} />
-				</article>
-			))
-		}
+		{posts.map((post) => <EntryCard post={post} />)}
 	</section>
+
+	{hasFilters && <p id="filter-empty" class="muted" hidden>No write-ups match these filters.</p>}
 </Layout>
 
 <style>
 	.intro {
 		max-width: 58ch;
 		color: var(--muted);
+		margin-bottom: 2rem;
+	}
+
+	.filters {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem 2rem;
 		margin-bottom: 2.5rem;
+	}
+
+	.filter-group {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
+
+	.filter-label {
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
+		color: var(--muted);
+		margin-right: 0.2rem;
+	}
+
+	.filter-group button {
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
+		background: none;
+		border: 1px solid var(--border);
+		color: var(--muted);
+		padding: 0.15em 0.6em;
+		border-radius: 3px;
+		cursor: pointer;
+	}
+
+	.filter-group button:hover {
+		color: var(--text);
+	}
+
+	.filter-group button[aria-pressed="true"] {
+		background: var(--surface);
+		color: var(--accent);
+		border-color: var(--accent);
+	}
+
+	.muted {
+		color: var(--muted);
 	}
 
 	.index-grid {
@@ -81,39 +131,71 @@ function metaFor(post: Entry): MetaItem[] {
 		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 		gap: 2rem 1.5rem;
 	}
-
-	.entry-thumb {
-		display: block;
-		aspect-ratio: 4 / 3;
-		border: 1px solid var(--border);
-		border-radius: 4px;
-		overflow: hidden;
-		margin-bottom: 0.65rem;
-	}
-
-	.entry-thumb :global(img) {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-	}
-
-	.entry.no-thumb {
-		border-top: 1px solid var(--border);
-		padding-top: 1rem;
-	}
-
-	.entry h3 {
-		font-size: var(--text-lg);
-		margin: 0 0 0.5rem;
-	}
-
-	.entry h3 a {
-		text-decoration: underline;
-		text-decoration-color: var(--border);
-		text-underline-offset: 3px;
-	}
-
-	.entry h3 a:hover {
-		text-decoration-color: var(--accent);
-	}
 </style>
+
+<script>
+	const container = document.getElementById('filters');
+
+	if (container) {
+		const entries = Array.from(document.querySelectorAll<HTMLElement>('#projects .entry'));
+		const emptyState = document.getElementById('filter-empty');
+
+		type Facet = 'type' | 'domain';
+		type State = Record<Facet, Set<string>>;
+
+		function readState(): State {
+			const params = new URLSearchParams(location.search);
+			return {
+				type: new Set((params.get('type') ?? '').split(',').filter(Boolean)),
+				domain: new Set((params.get('domain') ?? '').split(',').filter(Boolean)),
+			};
+		}
+
+		function syncButtons(state: State) {
+			container!.querySelectorAll<HTMLButtonElement>('button[data-facet]').forEach((btn) => {
+				const facet = btn.dataset.facet as Facet;
+				const value = btn.dataset.value ?? '';
+				btn.setAttribute('aria-pressed', String(state[facet].has(value)));
+			});
+		}
+
+		function apply(state: State) {
+			let visible = 0;
+			for (const entry of entries) {
+				const entryType = entry.dataset.type ?? '';
+				const entryDomains = (entry.dataset.domains ?? '').split(' ');
+				const typeOk = state.type.size === 0 || state.type.has(entryType);
+				const domainOk = state.domain.size === 0 || entryDomains.some((d) => state.domain.has(d));
+				const show = typeOk && domainOk;
+				entry.hidden = !show;
+				if (show) visible++;
+			}
+			if (emptyState) emptyState.hidden = visible !== 0;
+		}
+
+		function updateUrl(state: State) {
+			const params = new URLSearchParams();
+			if (state.type.size) params.set('type', Array.from(state.type).join(','));
+			if (state.domain.size) params.set('domain', Array.from(state.domain).join(','));
+			const query = params.toString();
+			const url = `${location.pathname}${query ? `?${query}` : ''}${location.hash}`;
+			history.replaceState(null, '', url);
+		}
+
+		const state = readState();
+		syncButtons(state);
+		apply(state);
+
+		container.addEventListener('click', (event) => {
+			const btn = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-facet]');
+			if (!btn) return;
+			const facet = btn.dataset.facet as Facet;
+			const value = btn.dataset.value ?? '';
+			if (state[facet].has(value)) state[facet].delete(value);
+			else state[facet].add(value);
+			syncButtons(state);
+			apply(state);
+			updateUrl(state);
+		});
+	}
+</script>

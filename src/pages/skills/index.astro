@@ -1,0 +1,136 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import { DOMAINS } from '../../data/taxonomy';
+
+type Entry = CollectionEntry<'projects'> | CollectionEntry<'notes'>;
+
+const projects = await getCollection('projects', ({ data }) => !data.draft);
+const notes = await getCollection('notes', ({ data }) => !data.draft);
+const posts: Entry[] = [...projects, ...notes];
+
+const domainsPresent = DOMAINS.filter((domain) => posts.some((p) => p.data.domains.includes(domain)));
+
+const sections = domainsPresent
+	.map((domain) => {
+		const domainPosts = posts.filter((p) => p.data.domains.includes(domain));
+		const skillMap = new Map<string, Entry[]>();
+		for (const post of domainPosts) {
+			for (const skill of post.data.skills) {
+				const list = skillMap.get(skill) ?? [];
+				list.push(post);
+				skillMap.set(skill, list);
+			}
+		}
+		return {
+			domain,
+			skills: Array.from(skillMap.entries()).map(([skill, skillPosts]) => ({
+				skill,
+				posts: skillPosts,
+			})),
+		};
+	})
+	.filter((section) => section.skills.length > 0);
+---
+
+<Layout
+	title="Skills — Oliver Browning"
+	description="Skills demonstrated in each project write-up, grouped by domain."
+>
+	<h1>Skills</h1>
+	<p class="intro">
+		Grouped by domain. Each skill links to the write-up that demonstrates
+		it.
+	</p>
+
+	{
+		sections.map(({ domain, skills }) => (
+			<section class="domain-section">
+				<h2>
+					<a class="link" href={`/tags/${domain}/`}>
+						{domain}
+					</a>
+				</h2>
+				<ul class="skill-list">
+					{skills.map(({ skill, posts: skillPosts }) => (
+						<li>
+							<span class="skill-name">{skill}</span>
+							<span class="skill-posts">
+								{skillPosts.map((post) => (
+									<a class="link" href={`/${post.collection}/${post.id}/`}>
+										{post.data.title}
+									</a>
+								))}
+							</span>
+						</li>
+					))}
+				</ul>
+			</section>
+		))
+	}
+</Layout>
+
+<style>
+	h1 {
+		font-size: var(--text-2xl);
+		margin-bottom: 0.5rem;
+	}
+
+	.intro {
+		color: var(--muted);
+		max-width: 58ch;
+		margin-bottom: 2.5rem;
+	}
+
+	.domain-section {
+		margin-bottom: 2.5rem;
+	}
+
+	.domain-section h2 {
+		font-family: var(--font-mono);
+		font-size: var(--text-sm);
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		border-bottom: 1px solid var(--border);
+		padding-bottom: 0.5rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.domain-section h2 a {
+		text-decoration: none;
+	}
+
+	.domain-section h2 a:hover {
+		text-decoration: underline;
+	}
+
+	.skill-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		gap: 0.6rem;
+	}
+
+	.skill-list li {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0.4rem;
+	}
+
+	.skill-name {
+		font-weight: 600;
+	}
+
+	.skill-name::after {
+		content: '—';
+		margin-inline-start: 0.4rem;
+		color: var(--muted);
+	}
+
+	.skill-posts a:not(:last-child)::after {
+		content: ', ';
+		color: var(--text);
+	}
+</style>

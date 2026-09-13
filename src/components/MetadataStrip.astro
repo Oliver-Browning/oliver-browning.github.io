@@ -8,6 +8,7 @@ export interface MetaItem {
   label: string;
   pill?: boolean;
   statusInProgress?: boolean;
+  href?: string;
 }
 
 interface Props {
@@ -19,16 +20,20 @@ const { items } = Astro.props;
 
 <ul class="meta">
   {
-    items.map((item) => (
-      <li>
-        {item.pill ? (
-          <span class:list={['pill', item.statusInProgress && 'status-in-progress']}>
-            {item.label}
-          </span>
-        ) : (
-          item.label
-        )}
-      </li>
-    ))
+    items.map((item) => {
+      if (!item.pill) return <li>{item.label}</li>;
+      const pillClass = ['pill', item.statusInProgress && 'status-in-progress'];
+      return (
+        <li>
+          {item.href ? (
+            <a class:list={pillClass} href={item.href}>
+              {item.label}
+            </a>
+          ) : (
+            <span class:list={pillClass}>{item.label}</span>
+          )}
+        </li>
+      );
+    })
   }
 </ul>

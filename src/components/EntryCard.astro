@@ -1,0 +1,88 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { Image } from 'astro:assets';
+import MetadataStrip, { type MetaItem } from './MetadataStrip.astro';
+
+type Entry = CollectionEntry<'projects'> | CollectionEntry<'notes'>;
+
+interface Props {
+  post: Entry;
+}
+
+const { post } = Astro.props;
+
+const meta: MetaItem[] = [
+  {
+    label: post.data.date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      timeZone: 'UTC',
+    }),
+  },
+  post.data.status === 'in-progress'
+    ? { label: 'in-progress', pill: true, statusInProgress: true }
+    : { label: post.data.status },
+  ...post.data.domains.map((domain) => ({
+    label: domain,
+    pill: true,
+    href: `/tags/${domain}/`,
+  })),
+];
+
+const href = `/${post.collection}/${post.id}/`;
+---
+
+<article
+  class:list={['entry', !post.data.hero && 'no-thumb']}
+  data-type={post.data.type}
+  data-domains={post.data.domains.join(' ')}
+>
+	{
+		post.data.hero && (
+			<a href={href} class="entry-thumb" tabindex="-1">
+				<Image src={post.data.hero} alt={post.data.heroAlt ?? ''} width={480} height={360} loading="lazy" />
+			</a>
+		)
+	}
+	<h3>
+		<a href={href}>{post.data.title}</a>
+	</h3>
+	<MetadataStrip items={meta} />
+</article>
+
+<style>
+	.entry-thumb {
+		display: block;
+		aspect-ratio: 4 / 3;
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		overflow: hidden;
+		margin-bottom: 0.65rem;
+	}
+
+	.entry-thumb :global(img) {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.entry.no-thumb {
+		border-top: 1px solid var(--border);
+		padding-top: 1rem;
+	}
+
+	.entry h3 {
+		font-size: var(--text-lg);
+		margin: 0 0 0.5rem;
+	}
+
+	.entry h3 a {
+		text-decoration: none;
+	}
+
+	.entry h3 a:hover {
+		text-decoration: underline;
+		text-decoration-color: var(--accent);
+		text-underline-offset: 3px;
+	}
+</style>
